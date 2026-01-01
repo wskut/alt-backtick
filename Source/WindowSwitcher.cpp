@@ -3,7 +3,7 @@
 #include "Logger.h"
 #include <map>
 
-// 프로세스별로 현재 인덱스만 기억 (창 목록은 활성화 순서로 가져옴)
+// 프로세스별로 현재 인덱스만 기억 (창 목록은 생성 순서로 가져옴)
 struct ProcessWindowState
 {
     size_t currentIndex;
@@ -35,7 +35,7 @@ static void ShowWindowX(HWND hwnd)
 
 bool SwitchToNextWindow(DWORD processId)
 {
-    // 활성화 순서로 창 목록 가져오기 (Windows의 실행 순서)
+    // 생성 순서(열린 순서)로 창 목록 가져오기
     std::vector<HWND> windows = GetWindowsByActivationOrder(processId);
     
     if (windows.empty())
@@ -70,7 +70,7 @@ bool SwitchToNextWindow(DWORD processId)
     }
     
 #ifdef DEBUG
-    Logger::Debug("Found " + std::to_string(windows.size()) + " windows (by activation order)");
+    Logger::Debug("Found " + std::to_string(windows.size()) + " windows (by creation order)");
     for (size_t i = 0; i < windows.size(); i++)
     {
         char title[256];
@@ -146,7 +146,7 @@ bool SwitchToPreviousWindow(DWORD processId)
     }
     
 #ifdef DEBUG
-    Logger::Debug("Found " + std::to_string(windows.size()) + " windows (by activation order)");
+    Logger::Debug("Found " + std::to_string(windows.size()) + " windows (by creation order)");
     for (size_t i = 0; i < windows.size(); i++)
     {
         char title[256];
