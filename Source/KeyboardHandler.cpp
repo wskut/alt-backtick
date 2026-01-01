@@ -32,21 +32,28 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
         
         // Alt + ` 키 조합 감지
         bool isAltPressed = (GetAsyncKeyState(MODIFIER_KEY) & 0x8000) != 0;
+        bool isShiftPressed = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
         bool isBacktickPressed = (vkCode == TARGET_VIRTUAL_KEY);
         bool isKeyDown = (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN);
         
         if (isAltPressed && isBacktickPressed && isKeyDown)
         {
-            Logger::Debug("[Alt + `] Detected!");
-            
             DWORD activeProcessId = GetActiveWindowProcessId();
             
             if (activeProcessId != 0)
             {
-                Logger::Debug("Active Process ID: " + std::to_string(activeProcessId));
-                
-                // 다음 창으로 전환
-                SwitchToNextWindow(activeProcessId);
+                if (isShiftPressed)
+                {
+                    Logger::Debug("[Alt + Shift + `] Detected!");
+                    // 이전 창으로 전환
+                    SwitchToPreviousWindow(activeProcessId);
+                }
+                else
+                {
+                    Logger::Debug("[Alt + `] Detected!");
+                    // 다음 창으로 전환
+                    SwitchToNextWindow(activeProcessId);
+                }
             }
             else
             {

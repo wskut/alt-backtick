@@ -4,4 +4,5 @@
 #include <vector>
 
 bool SwitchToNextWindow(DWORD processId);
+bool SwitchToPreviousWindow(DWORD processId);
 
