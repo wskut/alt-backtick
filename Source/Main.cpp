@@ -1,21 +1,37 @@
 #include "Common.h"
 #include "KeyboardHandler.h"
 #include "WindowHistory.h"
+#include "TrayIcon.h"
 #include "Logger.h"
 
 HHOOK g_KeyboardHook = NULL;
 
 int main()
 {
+#ifdef DEBUG
+    // 디버그 모드일 때는 콘솔 창을 띄워서 로깅 메시지를 볼 수 있게 함
+    AllocConsole();
+    FILE* fp;
+    freopen_s(&fp, "CONOUT$", "w", stdout);
+    freopen_s(&fp, "CONOUT$", "w", stderr);
+#endif
+
     // UTF-8 콘솔 출력 설정
     SetConsoleOutputCP(65001);
     SetConsoleCP(65001);
-    
+
+    // 로그 출력 복구
     Logger::Info("=== AltBacktick ===");
     Logger::Info("Installing hooks...");
     Logger::Debug("Keyboard monitoring enabled");
     Logger::Info("Press Alt + ` to switch windows");
-    
+
+    // 트레이 아이콘 및 숨김 윈도우 초기화
+    if (!InitTrayIcon())
+    {
+        return 0;
+    }
+
     // 창 활성화 이력 추적 초기화
     InitWindowActivationTracking();
     
@@ -31,6 +47,7 @@ int main()
     {
         Logger::Error("Failed to install keyboard hook. Error: " + std::to_string(GetLastError()));
         CleanupWindowActivationTracking();
+        CleanupTrayIcon();
         return 1;
     }
     
@@ -55,7 +72,13 @@ int main()
     }
     
     CleanupWindowActivationTracking();
+    CleanupTrayIcon();
     
     Logger::Info("Hooks uninstalled. Exiting...");
+
+#ifdef DEBUG
+    FreeConsole();
+#endif
+
     return 0;
 }
