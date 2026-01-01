@@ -13,6 +13,7 @@ int main()
     Logger::Info("=== AltBacktick ===");
     Logger::Info("Installing keyboard hook...");
     Logger::Debug("Keyboard monitoring enabled");
+    Logger::Info("Press Alt + ` to switch windows");
     
     // Low-level Keyboard Hook 설치
     g_KeyboardHook = SetWindowsHookEx(
