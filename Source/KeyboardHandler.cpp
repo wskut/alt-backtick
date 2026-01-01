@@ -1,6 +1,7 @@
 #include "KeyboardHandler.h"
 #include "Common.h"
 #include "WindowFinder.h"
+#include "WindowSwitcher.h"
 #include "Logger.h"
 #include <iostream>
 
@@ -42,10 +43,10 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
             
             if (activeProcessId != 0)
             {
-                std::vector<HWND> windows = FindWindowsByProcessId(activeProcessId);
-                
                 Logger::Debug("Active Process ID: " + std::to_string(activeProcessId));
-                Logger::Debug("Found " + std::to_string(windows.size()) + " window(s) for this process");
+                
+                // 다음 창으로 전환
+                SwitchToNextWindow(activeProcessId);
             }
             else
             {
