@@ -34,11 +34,24 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
             return TRUE;
         }
         
-        // ApplicationFrameWindow 제외 (Windows 10 UWP 앱 관련)
+        // 특정 클래스명의 윈도우 제외
         char className[256];
         if (GetClassNameA(hwnd, className, sizeof(className)) > 0)
         {
+            // ApplicationFrameWindow 제외 (Windows 10 UWP 앱 관련)
             if (strcmp(className, "ApplicationFrameWindow") == 0)
+            {
+                return TRUE;
+            }
+            
+            // 바탕화면 창 제외
+            if (strcmp(className, "Progman") == 0 || strcmp(className, "WorkerW") == 0)
+            {
+                return TRUE;
+            }
+            
+            // 작업 표시줄 창 제외
+            if (strcmp(className, "Shell_TrayWnd") == 0)
             {
                 return TRUE;
             }
