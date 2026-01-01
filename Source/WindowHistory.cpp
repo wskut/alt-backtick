@@ -3,6 +3,7 @@
 #include <map>
 #include <vector>
 #include <algorithm>
+#include <cstring>
 
 // 프로세스별 창 생성 순서 (열린 순서)
 static std::map<DWORD, std::vector<HWND>> g_CreationHistory;
@@ -32,6 +33,29 @@ static bool IsValidWindow(HWND hwnd)
     if (GetWindowTextLength(hwnd) == 0)
     {
         return false;
+    }
+
+    // 특정 클래스명의 윈도우 제외
+    char className[256];
+    if (GetClassNameA(hwnd, className, sizeof(className)) > 0)
+    {
+        // ApplicationFrameWindow 제외 (Windows 10 UWP 앱 관련)
+        if (strcmp(className, "ApplicationFrameWindow") == 0)
+        {
+            return false;
+        }
+
+        // 바탕화면 창 제외
+        if (strcmp(className, "Progman") == 0 || strcmp(className, "WorkerW") == 0)
+        {
+            return false;
+        }
+
+        // 작업 표시줄 창 제외
+        if (strcmp(className, "Shell_TrayWnd") == 0)
+        {
+            return false;
+        }
     }
 
     return true;
