@@ -1,4 +1,5 @@
 #include "WindowFinder.h"
+#include <cstring>
 
 struct EnumWindowsData
 {
@@ -15,6 +16,34 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
     
     if (processId == data->TargetProcessId)
     {
+        // 최상위 창만 필터링 (자식 창 제외)
+        if (GetParent(hwnd) != NULL)
+        {
+            return TRUE;
+        }
+        
+        // 실제 렌더링 된 윈도우만 필터링
+        if (!IsWindowVisible(hwnd))
+        {
+            return TRUE;
+        }
+        
+        // 제목이 있는 윈도우만 필터링 (빈 창 제외)
+        if (GetWindowTextLength(hwnd) == 0)
+        {
+            return TRUE;
+        }
+        
+        // ApplicationFrameWindow 제외 (Windows 10 UWP 앱 관련)
+        char className[256];
+        if (GetClassNameA(hwnd, className, sizeof(className)) > 0)
+        {
+            if (strcmp(className, "ApplicationFrameWindow") == 0)
+            {
+                return TRUE;
+            }
+        }
+        
         data->Windows.push_back(hwnd);
     }
     
