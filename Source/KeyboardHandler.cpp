@@ -42,7 +42,10 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
             
             if (activeProcessId != 0)
             {
+                std::vector<HWND> windows = FindWindowsByProcessId(activeProcessId);
+                
                 Logger::Debug("Active Process ID: " + std::to_string(activeProcessId));
+                Logger::Debug("Found " + std::to_string(windows.size()) + " window(s) for this process");
             }
             else
             {
