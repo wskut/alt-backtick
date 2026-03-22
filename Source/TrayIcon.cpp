@@ -1,10 +1,12 @@
 #include "TrayIcon.h"
 #include "Common.h"
 #include "Logger.h"
+#include "AutoStart.h"
 #include <shellapi.h>
 
 #define WM_TRAYICON (WM_USER + 1)
 #define ID_TRAY_EXIT 1001
+#define ID_TRAY_AUTOSTART 1002
 
 static NOTIFYICONDATA nid = {};
 static HWND g_hwnd = NULL;
@@ -32,6 +34,8 @@ static LRESULT CALLBACK TrayWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPAR
             POINT cursor;
             GetCursorPos(&cursor);
             HMENU hMenu = CreatePopupMenu();
+            AppendMenu(hMenu, MF_STRING | (IsAutoStartEnabled() ? MF_CHECKED : MF_UNCHECKED), ID_TRAY_AUTOSTART, TEXT("Run on Startup"));
+            AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
             AppendMenu(hMenu, MF_STRING, ID_TRAY_EXIT, TEXT("Exit AltBacktick"));
             
             SetForegroundWindow(hwnd);
@@ -39,6 +43,14 @@ static LRESULT CALLBACK TrayWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPAR
             if (selectedId == ID_TRAY_EXIT)
             {
                 PostQuitMessage(0);
+            }
+            else if (selectedId == ID_TRAY_AUTOSTART)
+            {
+                if (IsAutoStartEnabled()) {
+                    DisableAutoStart();
+                } else {
+                    EnableAutoStart();
+                }
             }
             DestroyMenu(hMenu);
         }
