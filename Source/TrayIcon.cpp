@@ -2,6 +2,7 @@
 #include "Common.h"
 #include "Logger.h"
 #include "AutoStart.h"
+#include "Resource.h"
 #include <shellapi.h>
 
 #define WM_TRAYICON (WM_USER + 1)
@@ -22,7 +23,7 @@ static LRESULT CALLBACK TrayWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPAR
         nid.uID = 1;
         nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
         nid.uCallbackMessage = WM_TRAYICON;
-        nid.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+        nid.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_APP_ICON));
         lstrcpy(nid.szTip, TEXT("AltBacktick"));
         Shell_NotifyIcon(NIM_ADD, &nid);
         return 0;
