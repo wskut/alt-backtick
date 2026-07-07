@@ -336,6 +336,13 @@ bool HandleProcessSwitcher(DWORD vkCode, WPARAM wParam)
             {
                 // First Tab after Alt-down: enter switching mode.
                 g_State = STATE_SWITCHING;
+
+                // Cancel the original window's menu tracking.  The Alt-down
+                // event already reached it and may have activated its menu
+                // bar.  WM_CANCELMODE tells the window to dismiss that state,
+                // exactly as Windows does internally for native Alt+Tab.
+                PostMessageW(GetForegroundWindow(), WM_CANCELMODE, 0, 0);
+
                 EnterAltTabMode();
                 ShowOverlay(g_ProcessList, g_Selection);
                 Logger::Debug("Tab down in ALT_DOWN -> SWITCHING");
