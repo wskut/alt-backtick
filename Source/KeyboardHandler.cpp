@@ -53,7 +53,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 
             // Mark the next Alt-up for consumption so it doesn't reach the
             // newly-activated window (unlike Alt+Tab, this switch is immediate).
-            ConsumeNextAltUp();
+            AltConsumeNextUp();
 
             DWORD activeProcessId = GetActiveWindowProcessId();
 
