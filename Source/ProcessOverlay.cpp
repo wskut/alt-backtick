@@ -7,11 +7,12 @@
 // ---------------------------------------------------------------------------
 // Layout constants
 // ---------------------------------------------------------------------------
-static constexpr int ICON_SIZE       = 48;
-static constexpr int SLOT_WIDTH      = 68;
+static constexpr int ICON_SIZE       = 32;   // matches taskbar icon size, no upscaling
+static constexpr int SLOT_WIDTH      = 52;   // 32 + 20px padding
+static constexpr int CORNER_RADIUS   = 8;    // rounded corner radius
 static constexpr int PANEL_PADDING   = 16;
-static constexpr int OVERLAY_HEIGHT  = 96;
-static constexpr int LABEL_FONT_SIZE = 20;
+static constexpr int OVERLAY_HEIGHT  = 80;   // icon + text + padding
+static constexpr int LABEL_FONT_SIZE = 18;
 
 static constexpr COLORREF BG_COLOR        = RGB(40, 40, 40);
 static constexpr COLORREF HIGHLIGHT_COLOR = RGB(0, 120, 215);
@@ -45,7 +46,7 @@ static HICON ExtractIconForProcess(const ProcessEntry& entry)
 
     SHFILEINFOW sfi = {};
     if (SHGetFileInfoW(wp.c_str(), 0, &sfi, sizeof(sfi),
-                       SHGFI_ICON | SHGFI_LARGEICON | SHGFI_SHELLICONSIZE))
+                       SHGFI_ICON | SHGFI_LARGEICON))
         return sfi.hIcon;
     return NULL;
 }
@@ -131,7 +132,7 @@ static Metrics CalcMetrics(size_t count)
 
     m.h = OVERLAY_HEIGHT;
     m.x = sx + (sw - m.w) / 2;
-    m.y = sy + sh / 3;
+    m.y = sy + (sh - m.h) / 2; // vertically centered
     return m;
 }
 
@@ -187,7 +188,7 @@ static LRESULT CALLBACK OverlayWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARA
                                     DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
                                     CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
             HGDIOBJ oldF = SelectObject(memDC, fnt);
-            RECT tr = { 0, OVERLAY_HEIGHT - 26, rc.right, rc.bottom };
+            RECT tr = { 0, OVERLAY_HEIGHT - 22, rc.right, rc.bottom };
             DrawTextW(memDC, g_selectedLabel.c_str(), -1, &tr,
                       DT_CENTER | DT_TOP | DT_SINGLELINE | DT_NOPREFIX);
             SelectObject(memDC, oldF);
@@ -248,6 +249,12 @@ void ShowOverlay(const std::vector<ProcessEntry>& list, size_t selection)
     Metrics m = CalcMetrics(list.size());
     SetWindowPos(g_hwnd, HWND_TOPMOST, m.x, m.y, m.w, m.h,
                  SWP_NOACTIVATE | SWP_SHOWWINDOW);
+
+    // Rounded corners via window region
+    HRGN rgn = CreateRoundRectRgn(0, 0, m.w + 1, m.h + 1, CORNER_RADIUS, CORNER_RADIUS);
+    SetWindowRgn(g_hwnd, rgn, TRUE);
+    DeleteObject(rgn);
+
     g_visible = true;
     InvalidateRect(g_hwnd, NULL, TRUE);
 }
