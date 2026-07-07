@@ -3,6 +3,7 @@
 #include "WindowFinder.h"
 #include "WindowSwitcher.h"
 #include "ProcessSwitcher.h"
+#include "AltKeyTracker.h"
 #include "Logger.h"
 #include <iostream>
 
@@ -18,7 +19,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
     {
         KBDLLHOOKSTRUCT* pKeyboardStruct = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
         DWORD vkCode = pKeyboardStruct->vkCode;
-        
+
 #ifdef DEBUG
         // 키 입력 모니터링 출력
         if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
@@ -31,32 +32,37 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
         }
 #endif
 
+        // Shared Alt key tracking — feeds IsAltHeld() for all handlers below.
+        HandleAltKey(vkCode, wParam);
+
         // Alt+Tab → process-level window switching
         if (HandleProcessSwitcher(vkCode, wParam))
             return 1;
 
-        // Alt + ` 키 조합 감지
-        bool isAltPressed = (GetAsyncKeyState(MODIFIER_KEY) & 0x8000) != 0;
+        // Alt + ` (backtick) → within-process window switching
+        bool isAltHeld      = IsAltHeld();
         bool isShiftPressed = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
-        bool isBacktickPressed = (vkCode == TARGET_VIRTUAL_KEY);
-        bool isKeyDown = (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN);
-        
-        if (isAltPressed && isBacktickPressed && isKeyDown)
+        bool isBacktick     = (vkCode == TARGET_VIRTUAL_KEY);
+        bool isKeyDown      = (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN);
+
+        if (isAltHeld && isBacktick && isKeyDown)
         {
+            // Same as Alt+Tab: dismiss the active window's menu bar before
+            // switching, so the target window receives clean focus.
+            PostMessageW(GetForegroundWindow(), WM_CANCELMODE, 0, 0);
+
             DWORD activeProcessId = GetActiveWindowProcessId();
-            
+
             if (activeProcessId != 0)
             {
                 if (isShiftPressed)
                 {
                     Logger::Debug("[Alt + Shift + `] Detected!");
-                    // 이전 창으로 전환
                     SwitchToPreviousWindow(activeProcessId);
                 }
                 else
                 {
                     Logger::Debug("[Alt + `] Detected!");
-                    // 다음 창으로 전환
                     SwitchToNextWindow(activeProcessId);
                 }
             }
@@ -64,11 +70,10 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
             {
                 Logger::Debug("Warning: Could not get active window PID");
             }
-            
-            // 키 입력 소비 (다른 앱으로 전달 방지)
+
             return 1;
         }
     }
-    
+
     return CallNextHookEx(g_KeyboardHook, nCode, wParam, lParam);
 }
