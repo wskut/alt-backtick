@@ -1,8 +1,9 @@
 #include "ProcessSwitcher.h"
-#include "AltKeyTracker.h"
+#include "AltTracker.h"
 #include "ProcessList.h"
 #include "ProcessOverlay.h"
 #include "Logger.h"
+#include "WindowSwitcher.h"
 #include <string>
 #include <vector>
 
@@ -60,44 +61,7 @@ static bool IsKeyUp(WPARAM wParam)
 // -----------------------------------------------------------------------
 static void SwitchToProcess(const ProcessEntry& entry)
 {
-    HWND hwnd = entry.mainWindow;
-
-    if (!IsWindow(hwnd))
-    {
-        Logger::Debug("SwitchToProcess: target window no longer exists");
-        return;
-    }
-
-    // Already in the foreground -- nothing to do.
-    if (GetForegroundWindow() == hwnd)
-    {
-        Logger::Debug("SwitchToProcess: target is already foreground");
-        return;
-    }
-
-    // Restore if minimized, otherwise bring to front without stealing focus.
-    if (IsIconic(hwnd))
-    {
-        ShowWindow(hwnd, SW_RESTORE);
-    }
-    else
-    {
-        ShowWindow(hwnd, SW_SHOWNA);
-    }
-
-    // Bypass the foreground-lock restriction by injecting a harmless mouse
-    // event.  Windows grants SetForegroundWindow to any thread that has
-    // recently received input.
-    {
-        INPUT mouseInput = {};
-        mouseInput.type = INPUT_MOUSE;
-        SendInput(1, &mouseInput, sizeof(INPUT));
-    }
-
-    SetForegroundWindow(GetLastActivePopup(hwnd));
-
-    Logger::Info("Switched to process " + entry.processName +
-                 " (PID " + std::to_string(entry.processId) + ")");
+    BringWindowToForeground(entry.mainWindow);
 }
 
 // -----------------------------------------------------------------------

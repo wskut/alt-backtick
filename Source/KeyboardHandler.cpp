@@ -3,7 +3,7 @@
 #include "WindowFinder.h"
 #include "WindowSwitcher.h"
 #include "ProcessSwitcher.h"
-#include "AltKeyTracker.h"
+#include "AltTracker.h"
 #include "Logger.h"
 #include <iostream>
 
