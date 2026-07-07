@@ -1,7 +1,7 @@
 #include "AltKeyTracker.h"
 
 static bool g_AltHeld = false;
-static bool g_ConsumeNextUp = false; // one-shot after immediate switch
+static bool g_ConsumeNextUp = false;
 
 bool HandleAltKey(DWORD vkCode, WPARAM wParam)
 {
@@ -13,21 +13,15 @@ bool HandleAltKey(DWORD vkCode, WPARAM wParam)
         if (down)
         {
             g_AltHeld = true;
-            // Clear stale consume flag from prior Alt press
-            g_ConsumeNextUp = false;
+            g_ConsumeNextUp = false; // clear stale flag
         }
 
         if (up)
-        {
             g_AltHeld = false;
-            if (g_ConsumeNextUp)
-            {
-                g_ConsumeNextUp = false;
-                return true; // consumed — new window never sees it
-            }
-        }
     }
-    return false; // normally never consumed
+    // Never consume Alt — other handlers (ProcessSwitcher, backtick) must
+    // also see every Alt event.
+    return false;
 }
 
 bool IsAltHeld()
@@ -38,4 +32,14 @@ bool IsAltHeld()
 void AltConsumeNextUp()
 {
     g_ConsumeNextUp = true;
+}
+
+bool AltShouldConsumeUp()
+{
+    if (g_ConsumeNextUp)
+    {
+        g_ConsumeNextUp = false;
+        return true;
+    }
+    return false;
 }

@@ -16,3 +16,7 @@ bool IsAltHeld();
 /// Alt+key switch (Alt+Backtick) to prevent Alt-up from reaching the
 /// newly-activated window.
 void AltConsumeNextUp();
+
+/// Check and consume the one-shot flag.  Returns true if this Alt-up
+/// should not reach the foreground window.  Call from Alt-up handlers.
+bool AltShouldConsumeUp();

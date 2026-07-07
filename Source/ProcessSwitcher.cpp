@@ -1,4 +1,5 @@
 #include "ProcessSwitcher.h"
+#include "AltKeyTracker.h"
 #include "ProcessList.h"
 #include "ProcessOverlay.h"
 #include "Logger.h"
@@ -310,7 +311,16 @@ bool HandleProcessSwitcher(DWORD vkCode, WPARAM wParam)
         }
         else if (IsKeyUp(wParam) && g_State == STATE_ALT_DOWN)
         {
-            // Alt released with no Tab pressed -- simple no-op.
+            if (AltShouldConsumeUp())
+            {
+                // Immediate switch (Alt+Backtick) happened — consume Alt-up
+                // so the newly-activated window doesn't receive it.
+                g_State = STATE_IDLE;
+                Logger::Debug("Alt up in ALT_DOWN -> consumed (immediate switch)");
+                return true;
+            }
+
+            // Normal Alt release with no switch.
             g_State = STATE_IDLE;
             Logger::Debug("Alt up in ALT_DOWN -> IDLE");
             return false;
