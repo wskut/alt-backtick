@@ -2,6 +2,7 @@
 #include "KeyboardHandler.h"
 #include "WindowHistory.h"
 #include "TrayIcon.h"
+#include "ProcessSwitcher.h"
 #include "Logger.h"
 
 HHOOK g_KeyboardHook = NULL;
@@ -25,6 +26,7 @@ int main()
     Logger::Info("Installing hooks...");
     Logger::Debug("Keyboard monitoring enabled");
     Logger::Info("Press Alt + ` to switch windows");
+    Logger::Info("Press Alt + Tab to switch processes");
 
     // 트레이 아이콘 및 숨김 윈도우 초기화
     if (!InitTrayIcon())
@@ -34,6 +36,7 @@ int main()
 
     // 창 활성화 이력 추적 초기화
     InitWindowActivationTracking();
+    InitProcessSwitcher();
     
     // Low-level Keyboard Hook 설치
     g_KeyboardHook = SetWindowsHookEx(
@@ -46,6 +49,7 @@ int main()
     if (g_KeyboardHook == NULL)
     {
         Logger::Error("Failed to install keyboard hook. Error: " + std::to_string(GetLastError()));
+        CleanupProcessSwitcher();
         CleanupWindowActivationTracking();
         CleanupTrayIcon();
         return 1;
@@ -71,9 +75,10 @@ int main()
         g_KeyboardHook = NULL;
     }
     
+    CleanupProcessSwitcher();
     CleanupWindowActivationTracking();
     CleanupTrayIcon();
-    
+
     Logger::Info("Hooks uninstalled. Exiting...");
 
 #ifdef DEBUG

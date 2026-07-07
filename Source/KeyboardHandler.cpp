@@ -2,6 +2,7 @@
 #include "Common.h"
 #include "WindowFinder.h"
 #include "WindowSwitcher.h"
+#include "ProcessSwitcher.h"
 #include "Logger.h"
 #include <iostream>
 
@@ -29,7 +30,11 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
             std::cout << "[KEY UP]   VK_CODE=" << vkCode << " (" << GetKeyName(vkCode) << ")" << std::endl;
         }
 #endif
-        
+
+        // Alt+Tab → process-level window switching
+        if (HandleProcessSwitcher(vkCode, wParam))
+            return 1;
+
         // Alt + ` 키 조합 감지
         bool isAltPressed = (GetAsyncKeyState(MODIFIER_KEY) & 0x8000) != 0;
         bool isShiftPressed = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
