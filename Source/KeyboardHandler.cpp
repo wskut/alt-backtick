@@ -49,7 +49,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
         {
             // Same as Alt+Tab: dismiss the active window's menu bar before
             // switching, so the target window receives clean focus.
-            PostMessageW(GetForegroundWindow(), WM_CANCELMODE, 0, 0);
+            SendMessageW(GetForegroundWindow(), WM_CANCELMODE, 0, 0);
 
             DWORD activeProcessId = GetActiveWindowProcessId();
 

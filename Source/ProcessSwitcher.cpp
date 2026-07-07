@@ -341,7 +341,7 @@ bool HandleProcessSwitcher(DWORD vkCode, WPARAM wParam)
                 // event already reached it and may have activated its menu
                 // bar.  WM_CANCELMODE tells the window to dismiss that state,
                 // exactly as Windows does internally for native Alt+Tab.
-                PostMessageW(GetForegroundWindow(), WM_CANCELMODE, 0, 0);
+                SendMessageW(GetForegroundWindow(), WM_CANCELMODE, 0, 0);
 
                 EnterAltTabMode();
                 ShowOverlay(g_ProcessList, g_Selection);
