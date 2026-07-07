@@ -170,7 +170,7 @@ static LRESULT CALLBACK OverlayWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARA
             if ((size_t)i == g_selection)
             {
                 HBRUSH hl = CreateSolidBrush(HIGHLIGHT_COLOR);
-                RECT hr = { ix - 2, iy - 2, ix + ICON_SIZE + 2, iy + ICON_SIZE + 2 };
+                RECT hr = { ix - 6, iy - 6, ix + ICON_SIZE + 6, iy + ICON_SIZE + 6 };
                 FillRect(memDC, &hr, hl);
                 DeleteObject(hl);
             }
