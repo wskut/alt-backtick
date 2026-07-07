@@ -17,8 +17,11 @@ static HWND GetAppHost(HWND hwnd)
     return hwnd;
 }
 
-static void ShowWindowX(HWND hwnd)
+bool BringWindowToForeground(HWND hwnd)
 {
+    if (!IsWindow(hwnd))
+        return false;
+
     if (GetForegroundWindow() != hwnd)
     {
         if (IsIconic(hwnd))
@@ -29,8 +32,14 @@ static void ShowWindowX(HWND hwnd)
         {
             ShowWindow(hwnd, SW_SHOWNA);
         }
+        // Bypass the foreground-lock restriction.
+        INPUT mouseInput = {};
+        mouseInput.type = INPUT_MOUSE;
+        SendInput(1, &mouseInput, sizeof(INPUT));
         SetForegroundWindow(GetLastActivePopup(GetAppHost(hwnd)));
+        return true;
     }
+    return false;
 }
 
 bool SwitchToNextWindow(DWORD processId)
@@ -103,7 +112,7 @@ bool SwitchToNextWindow(DWORD processId)
     SendInput(1, &mouseInput, sizeof(INPUT));
     
     // 창 전환
-    ShowWindowX(nextWindow);
+    BringWindowToForeground(nextWindow);
     
     Logger::Debug("Switched to window " + std::to_string(nextIndex + 1) + " of " + std::to_string(windows.size()));
     return true;
@@ -179,7 +188,7 @@ bool SwitchToPreviousWindow(DWORD processId)
     SendInput(1, &mouseInput, sizeof(INPUT));
     
     // 창 전환
-    ShowWindowX(prevWindow);
+    BringWindowToForeground(prevWindow);
     
     Logger::Debug("Switched to window " + std::to_string(prevIndex + 1) + " of " + std::to_string(windows.size()));
     return true;

@@ -1,59 +1,76 @@
 #include "AutoStart.h"
-#include <windows.h>
 #include "Logger.h"
+#include <windows.h>
 
-const char* REG_KEY_RUN = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-const char* APP_NAME = "AltBacktick";
+static const char* TASK_NAME = "AltBacktick";
 
-static std::string GetExePath() {
+static std::string GetExePath()
+{
     char path[MAX_PATH];
-    if (GetModuleFileNameA(NULL, path, MAX_PATH)) {
+    if (GetModuleFileNameA(NULL, path, MAX_PATH))
         return std::string(path);
-    }
     return "";
 }
 
-bool IsAutoStartEnabled() {
-    HKEY hKey;
-    if (RegOpenKeyExA(HKEY_CURRENT_USER, REG_KEY_RUN, 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-        char value[MAX_PATH];
-        DWORD valueSize = sizeof(value);
-        if (RegQueryValueExA(hKey, APP_NAME, NULL, NULL, (LPBYTE)value, &valueSize) == ERROR_SUCCESS) {
-            RegCloseKey(hKey);
-            return true;
-        }
-        RegCloseKey(hKey);
+/// Run schtasks.exe with the given arguments and return true on success.
+static bool RunSchTasks(const std::string& args)
+{
+    std::string cmd = "schtasks " + args;
+
+    STARTUPINFOA si = {};
+    si.cb = sizeof(si);
+    PROCESS_INFORMATION pi = {};
+
+    if (!CreateProcessA(NULL, &cmd[0], NULL, NULL, FALSE,
+                        CREATE_NO_WINDOW, NULL, NULL, &si, &pi))
+        return false;
+
+    WaitForSingleObject(pi.hProcess, INFINITE);
+
+    DWORD code = 0;
+    GetExitCodeProcess(pi.hProcess, &code);
+
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+
+    return code == 0;
+}
+
+bool IsAutoStartEnabled()
+{
+    return RunSchTasks(std::string("/query /tn \"") + TASK_NAME + "\" /nh");
+}
+
+bool EnableAutoStart()
+{
+    std::string exe = GetExePath();
+    if (exe.empty())
+    {
+        Logger::Error("AutoStart: could not get exe path.");
+        return false;
     }
+
+    std::string args = std::string("/create /sc onlogon /tn \"") + TASK_NAME +
+                       "\" /tr \"" + exe + "\" /rl highest /f";
+
+    if (RunSchTasks(args))
+    {
+        Logger::Info("AutoStart enabled via Task Scheduler (admin on logon).");
+        return true;
+    }
+
+    Logger::Error("AutoStart: schtasks /create failed.");
     return false;
 }
 
-bool EnableAutoStart() {
-    std::string exePath = GetExePath();
-    if (exePath.empty()) return false;
-
-    HKEY hKey;
-    if (RegOpenKeyExA(HKEY_CURRENT_USER, REG_KEY_RUN, 0, KEY_SET_VALUE, &hKey) == ERROR_SUCCESS) {
-        if (RegSetValueExA(hKey, APP_NAME, 0, REG_SZ, (const BYTE*)exePath.c_str(), exePath.length() + 1) == ERROR_SUCCESS) {
-            RegCloseKey(hKey);
-            Logger::Info("AutoStart enabled.");
-            return true;
-        }
-        RegCloseKey(hKey);
+bool DisableAutoStart()
+{
+    if (RunSchTasks(std::string("/delete /tn \"") + TASK_NAME + "\" /f"))
+    {
+        Logger::Info("AutoStart disabled.");
+        return true;
     }
-    Logger::Error("Failed to enable AutoStart.");
-    return false;
-}
 
-bool DisableAutoStart() {
-    HKEY hKey;
-    if (RegOpenKeyExA(HKEY_CURRENT_USER, REG_KEY_RUN, 0, KEY_SET_VALUE, &hKey) == ERROR_SUCCESS) {
-        if (RegDeleteValueA(hKey, APP_NAME) == ERROR_SUCCESS || GetLastError() == ERROR_FILE_NOT_FOUND) {
-            RegCloseKey(hKey);
-            Logger::Info("AutoStart disabled.");
-            return true;
-        }
-        RegCloseKey(hKey);
-    }
-    Logger::Error("Failed to disable AutoStart.");
+    Logger::Error("AutoStart: schtasks /delete failed.");
     return false;
 }
