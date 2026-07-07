@@ -51,6 +51,10 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
             // switching, so the target window receives clean focus.
             SendMessageW(GetForegroundWindow(), WM_CANCELMODE, 0, 0);
 
+            // Mark the next Alt-up for consumption so it doesn't reach the
+            // newly-activated window (unlike Alt+Tab, this switch is immediate).
+            ConsumeNextAltUp();
+
             DWORD activeProcessId = GetActiveWindowProcessId();
 
             if (activeProcessId != 0)

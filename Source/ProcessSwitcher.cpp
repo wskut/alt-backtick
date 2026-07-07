@@ -24,6 +24,11 @@ static size_t                    g_Selection  = 0;
 // -----------------------------------------------------------------------
 static ProcessEntry g_PendingTarget;
 
+// One-shot flag: when set, the next Alt-up in STATE_ALT_DOWN is consumed.
+// Used after an immediate switch (Alt+Backtick) to prevent Alt-up from
+// reaching the newly-activated window.
+static bool g_ConsumeAltUp = false;
+
 // -----------------------------------------------------------------------
 // Message-only window for deferred switching
 // -----------------------------------------------------------------------
@@ -266,6 +271,15 @@ void CleanupProcessSwitcher()
 }
 
 // -----------------------------------------------------------------------
+// ConsumeNextAltUp  -- called from KeyboardHandler after an immediate
+// switch (Alt+Backtick) so the Alt-up doesn't reach the new window.
+// -----------------------------------------------------------------------
+void ConsumeNextAltUp()
+{
+    g_ConsumeAltUp = true;
+}
+
+// -----------------------------------------------------------------------
 // HandleProcessSwitcher -- called from the low-level keyboard hook.
 //
 // Returns  true  if the key event should be consumed (not propagated to
@@ -280,6 +294,8 @@ bool HandleProcessSwitcher(DWORD vkCode, WPARAM wParam)
         if (IsKeyDown(wParam) && g_State == STATE_IDLE)
         {
             g_State = STATE_ALT_DOWN;
+            // Clear any leftover consume flag from a prior Alt press.
+            g_ConsumeAltUp = false;
             Logger::Debug("Alt down -> ALT_DOWN");
         }
         else if (IsKeyUp(wParam) && g_State == STATE_SWITCHING)
@@ -310,6 +326,17 @@ bool HandleProcessSwitcher(DWORD vkCode, WPARAM wParam)
         }
         else if (IsKeyUp(wParam) && g_State == STATE_ALT_DOWN)
         {
+            if (g_ConsumeAltUp)
+            {
+                // An immediate switch (Alt+Backtick) happened while Alt was
+                // held.  Consume this Alt-up so it doesn't reach the newly-
+                // activated window.
+                g_ConsumeAltUp = false;
+                g_State = STATE_IDLE;
+                Logger::Debug("Alt up in ALT_DOWN -> consumed (immediate switch was active)");
+                return true;
+            }
+
             // Alt released with no Tab pressed -- simple no-op.
             g_State = STATE_IDLE;
             Logger::Debug("Alt up in ALT_DOWN -> IDLE");
