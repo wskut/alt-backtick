@@ -355,6 +355,43 @@ bool HandleProcessSwitcher(DWORD vkCode, WPARAM wParam)
         return true;
     }
 
+    // ------ Delete key (close selected process) ------
+    if (vkCode == VK_DELETE && g_State == STATE_SWITCHING && !g_ProcessList.empty())
+    {
+        if (IsKeyDown(wParam) && g_Selection < g_ProcessList.size())
+        {
+            Logger::Debug("Delete in SWITCHING -> close " +
+                          g_ProcessList[g_Selection].processName);
+
+            HWND hwnd = g_ProcessList[g_Selection].mainWindow;
+            if (IsWindow(hwnd))
+            {
+                // Ask the window to close gracefully.
+                PostMessageW(hwnd, WM_CLOSE, 0, 0);
+            }
+
+            // Remove the process from the list.
+            g_ProcessList.erase(g_ProcessList.begin() +
+                                static_cast<ptrdiff_t>(g_Selection));
+
+            // Adjust selection to stay within bounds.
+            if (g_ProcessList.empty())
+            {
+                HideOverlay();
+                g_State = STATE_ALT_DOWN;
+                return true;
+            }
+
+            if (g_Selection >= g_ProcessList.size())
+                g_Selection = g_ProcessList.size() - 1;
+
+            // Refresh the overlay with the updated list.
+            ShowOverlay(g_ProcessList, g_Selection);
+            return true;
+        }
+        return true; // always consume Delete in SWITCHING mode
+    }
+
     // All other keys pass through.
     return false;
 }
