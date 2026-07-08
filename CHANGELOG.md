@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.2.0a2] - 2026-07-08
+
+- **Delete key**: Close the selected process in the Alt+Tab overlay.
+  Sends WM_CLOSE to all visible windows, then TerminateProcess as fallback.
+
 ## [v0.2.0a1] - 2026-07-07
 
 - Implemented **Alt+Tab process-level window switching** with visual overlay.
