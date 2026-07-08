@@ -360,21 +360,34 @@ bool HandleProcessSwitcher(DWORD vkCode, WPARAM wParam)
     {
         if (IsKeyDown(wParam) && g_Selection < g_ProcessList.size())
         {
-            Logger::Debug("Delete in SWITCHING -> close " +
-                          g_ProcessList[g_Selection].processName);
+            DWORD pid = g_ProcessList[g_Selection].processId;
+            Logger::Debug("Delete in SWITCHING -> closing PID " +
+                          std::to_string(pid) + " (" +
+                          g_ProcessList[g_Selection].processName + ")");
 
-            HWND hwnd = g_ProcessList[g_Selection].mainWindow;
-            if (IsWindow(hwnd))
+            // 1. Gracefully close every visible window owned by this PID.
+            EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
+                DWORD targetPid = static_cast<DWORD>(lParam);
+                DWORD wndPid = 0;
+                GetWindowThreadProcessId(hwnd, &wndPid);
+                if (wndPid == targetPid && IsWindowVisible(hwnd) && GetWindowTextLengthW(hwnd) > 0)
+                    PostMessageW(hwnd, WM_CLOSE, 0, 0);
+                return TRUE;
+            }, static_cast<LPARAM>(pid));
+
+            // 2. Force-kill any remaining process (after WM_CLOSE, apps
+            //    that refuse to exit get terminated).
+            HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
+            if (hProcess)
             {
-                // Ask the window to close gracefully.
-                PostMessageW(hwnd, WM_CLOSE, 0, 0);
+                TerminateProcess(hProcess, 1);
+                CloseHandle(hProcess);
             }
 
-            // Remove the process from the list.
+            // 3. Remove from our list and update overlay.
             g_ProcessList.erase(g_ProcessList.begin() +
                                 static_cast<ptrdiff_t>(g_Selection));
 
-            // Adjust selection to stay within bounds.
             if (g_ProcessList.empty())
             {
                 HideOverlay();
@@ -385,7 +398,6 @@ bool HandleProcessSwitcher(DWORD vkCode, WPARAM wParam)
             if (g_Selection >= g_ProcessList.size())
                 g_Selection = g_ProcessList.size() - 1;
 
-            // Refresh the overlay with the updated list.
             ShowOverlay(g_ProcessList, g_Selection);
             return true;
         }
